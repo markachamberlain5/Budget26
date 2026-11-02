@@ -3,117 +3,94 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fairmead Cash Flow Engine</title>
+  <title>Fairmead House Account - Burndown & Cash Flow Engine</title>
   <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Google Fonts: Inter -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Chart.js for Burndown Chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      --bs-body-bg: #f8fafc;
-      --bs-body-font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      --bs-card-border-radius: 0.875rem;
-      --whatsapp-green: #25d366;
-      --whatsapp-hover: #1ebd56;
+      --bs-body-bg: #f8f9fa;
+      --bs-card-border-radius: 0.75rem;
     }
     body {
-      color: #0f172a;
-      -webkit-tap-highlight-color: transparent;
-      background-color: var(--bs-body-bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #212529;
     }
     .card {
-      border: 1px solid #e2e8f0;
+      border: 1px solid #e9ecef;
       border-radius: var(--bs-card-border-radius);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-      background-color: #ffffff;
-    }
-    .metric-card {
-      padding: 1rem;
-      height: 100%;
+      box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.04);
     }
     .metric-value {
-      font-size: 1.65rem;
+      font-size: 1.75rem;
       font-weight: 700;
       letter-spacing: -0.02em;
     }
     .btn-whatsapp {
-      background-color: var(--whatsapp-green);
+      background-color: #25d366;
       color: #ffffff;
       font-weight: 600;
-      border-radius: 0.625rem;
-      padding: 0.65rem 1.25rem;
-      border: none;
     }
-    .btn-whatsapp:hover, .btn-whatsapp:focus {
-      background-color: var(--whatsapp-hover);
+    .btn-whatsapp:hover {
+      background-color: #1ebd56;
       color: #ffffff;
     }
-    .btn-touch {
-      min-height: 44px;
-    }
-    .nav-pills .nav-link {
-      color: #64748b;
-      font-weight: 600;
-      border-radius: 0.625rem;
-      padding: 0.55rem 1.1rem;
-    }
-    .nav-pills .nav-link.active {
-      background-color: #0f172a;
-      color: #ffffff;
-    }
-    .payload-preview {
-      background-color: #f1f5f9;
-      border: 1px solid #cbd5e1;
-      border-radius: 0.625rem;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.85rem;
-      white-space: pre-wrap;
-      word-break: break-word;
-      color: #1e293b;
-    }
-    .table-sm th, .table-sm td {
-      padding: 0.6rem 0.75rem;
-    }
-    .status-badge {
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 0.25rem 0.5rem;
-      border-radius: 0.375rem;
-    }
-    .fs-7 {
-      font-size: 0.8rem;
+    #lockScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #f8f9fa;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
   </style>
 </head>
-<body class="py-3 py-md-4">
-  <div class="container" style="max-width: 860px;">
+<body class="py-4">
+
+  <!-- PASSWORD GATEWAY OVERLAY -->
+  <div id="lockScreen">
+    <div class="card p-4 shadow-sm text-center" style="max-width: 360px; width: 90%;">
+      <div class="mb-3">
+        <svg width="40" height="40" fill="#0d6efd" viewBox="0 0 16 16">
+          <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM5 8h6a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/>
+        </svg>
+      </div>
+      <h2 class="h5 fw-bold mb-1">Fairmead Budget</h2>
+      <p class="text-secondary small mb-3">Enter passcode to access house account</p>
+      <form id="loginForm">
+        <div class="mb-3">
+          <input type="password" class="form-control text-center" id="passwordInput" placeholder="Passcode" required autofocus>
+          <div id="loginError" class="text-danger small mt-2 d-none">Incorrect passcode. Try again.</div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Unlock App</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN APP CONTAINER -->
+  <div class="container d-none" id="appContent" style="max-width: 800px;">
     
     <!-- Header -->
-    <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-      <div class="d-flex align-items-center gap-3">
-        <div class="p-2 bg-primary-subtle text-primary rounded-3">
-          <!-- House Icon SVG -->
-          <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-        </div>
-        <div>
-          <h1 class="h4 mb-0 fw-bold text-dark">Fairmead Cash Flow Engine</h1>
-          <p class="text-secondary small mb-0">Joint House Account • Mark & Lorna Chamberlain</p>
-        </div>
+    <header class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h1 class="h3 mb-0 fw-bold">Fairmead Cash Flow Engine</h1>
+        <p class="text-secondary small mb-0">Dual Payday & Burndown Visualiser</p>
       </div>
-      <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-semibold">
-        Paydays: 28th & Month-End
-      </span>
+      <button class="btn btn-outline-secondary btn-sm" id="lockAppBtn">Lock App</button>
     </header>
 
-    <!-- Navigation Pills -->
-    <ul class="nav nav-pills mb-4 gap-2" id="budgetTabs" role="tablist">
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs mb-4" id="budgetTabs" role="tablist">
       <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="dashboard-tab" data-bs-toggle="pill" data-bs-target="#dashboard" type="button" role="tab">Dashboard</button>
+        <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">Dashboard & Burndown</button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="schedule-tab" data-bs-toggle="pill" data-bs-target="#schedule" type="button" role="tab">Bill Schedule (23 Direct Debits)</button>
+        <button class="nav-link" id="schedule-tab" data-bs-toggle="tab" data-bs-target="#schedule" type="button" role="tab">Bill Schedule</button>
       </li>
     </ul>
 
@@ -125,87 +102,85 @@
         <!-- Metrics Summary Cards -->
         <div class="row g-3 mb-4">
           <div class="col-6 col-md-3">
-            <div class="card metric-card">
-              <span class="text-secondary small fw-medium">Pending Bills</span>
-              <div class="metric-value text-danger mt-1" id="displayPendingBills">£0.00</div>
-              <span class="text-muted fs-7" id="displayPendingCount">0 bills due before 28th</span>
+            <div class="card h-100">
+              <div class="card-body p-3">
+                <span class="text-secondary small">Pending Bills</span>
+                <div class="metric-value text-danger" id="displayPendingBills">£0</div>
+              </div>
             </div>
           </div>
           <div class="col-6 col-md-3">
-            <div class="card metric-card">
-              <span class="text-secondary small fw-medium">Protected Pool</span>
-              <div class="metric-value text-dark mt-1" id="displayNetFlexible">£0.00</div>
-              <span class="text-muted fs-7">Balance minus pending</span>
+            <div class="card h-100">
+              <div class="card-body p-3">
+                <span class="text-secondary small">Protected Pool</span>
+                <div class="metric-value text-dark" id="displayNetFlexible">£0</div>
+              </div>
             </div>
           </div>
           <div class="col-6 col-md-3">
-            <div class="card metric-card">
-              <span class="text-secondary small fw-medium">Days to Payday</span>
-              <div class="metric-value text-primary mt-1" id="displayDaysToPayday">0</div>
-              <span class="text-muted fs-7" id="displayWeeksSubtext">0.0 weeks remaining</span>
+            <div class="card h-100">
+              <div class="card-body p-3">
+                <span class="text-secondary small">Days to Payday</span>
+                <div class="metric-value text-primary" id="displayDaysToPayday">0</div>
+              </div>
             </div>
           </div>
           <div class="col-6 col-md-3">
-            <div class="card metric-card">
-              <span class="text-secondary small fw-medium">Adj. Weekly Spend</span>
-              <div class="metric-value text-success mt-1" id="displayWeeklySpend">£0.00</div>
-              <span class="text-muted fs-7">Variable limit / week</span>
+            <div class="card h-100">
+              <div class="card-body p-3">
+                <span class="text-secondary small">Adj. Weekly Spend</span>
+                <div class="metric-value text-success" id="displayWeeklySpend">£0</div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Checkpoint Form -->
+        <!-- BURNDOWN CHART CARD -->
+        <div class="card mb-4">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h2 class="h5 fw-bold mb-0">Monthly Account Burndown Trajectory</h2>
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Target vs Actual</span>
+            </div>
+            <div style="position: relative; height:260px;">
+              <canvas id="burndownChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Balance Checkpoint Entry -->
         <div class="card mb-4">
           <div class="card-body p-4">
             <h2 class="h5 fw-bold mb-3">Balance Checkpoint Entry</h2>
             <form id="checkpointForm">
               <div class="row g-3 align-items-end">
-                <div class="col-12 col-md-4">
-                  <label for="checkDate" class="form-label small fw-semibold text-secondary">Checkpoint Date</label>
-                  <input type="date" class="form-control btn-touch" id="checkDate" required>
+                <div class="col-md-4">
+                  <label for="checkDate" class="form-label small text-secondary">Checkpoint Date</label>
+                  <input type="date" class="form-control" id="checkDate" required>
                 </div>
-                <div class="col-12 col-md-5">
-                  <label for="checkBalance" class="form-label small fw-semibold text-secondary">Account Balance on Date (£)</label>
-                  <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0">£</span>
-                    <input type="number" step="0.01" class="form-control btn-touch border-start-0" id="checkBalance" placeholder="e.g. 2450.00" required>
-                  </div>
+                <div class="col-md-5">
+                  <label for="checkBalance" class="form-label small text-secondary">Account Balance on Date (£)</label>
+                  <input type="number" step="0.01" class="form-control" id="checkBalance" placeholder="e.g. 2150.00" required>
                 </div>
-                <div class="col-12 col-md-3">
-                  <button type="submit" class="btn btn-primary btn-touch w-100 fw-semibold rounded-3">Calculate</button>
+                <div class="col-md-3">
+                  <button type="submit" class="btn btn-primary w-100">Calculate & Plot</button>
                 </div>
               </div>
             </form>
           </div>
         </div>
 
-        <!-- WhatsApp Payload Container -->
+        <!-- WhatsApp Payload -->
         <div class="card">
           <div class="card-body p-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <div class="d-flex align-items-center gap-2">
-                <!-- WhatsApp Icon SVG -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#25d366" viewBox="0 0 16 16">
-                  <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.646 1.93 6.56 6.56 0 0 1 1.928 4.646c-.002 3.627-2.958 6.583-6.578 6.583zm3.607-4.928c-.198-.099-1.17-.578-1.353-.646-.182-.067-.315-.099-.447.099-.133.197-.513.646-.629.778-.117.132-.233.148-.43.05-.197-.099-.834-.308-1.587-.98-.588-.524-.986-1.17-1.102-1.368-.116-.198-.012-.304.087-.403.088-.088.197-.232.296-.347.099-.116.132-.197.197-.33.066-.133.033-.248-.016-.347-.05-.099-.447-1.077-.612-1.47-.16-.384-.323-.332-.447-.338l-.38-.007c-.133 0-.348.05-.53.248-.182.198-.696.681-.696 1.662 0 .98.713 1.927.813 2.06.099.132 1.405 2.146 3.404 3.01.476.206.848.33 1.138.423.477.152.912.13 1.256.079.385-.058 1.17-.478 1.335-.94.165-.463.165-.859.116-.94-.049-.082-.181-.132-.379-.23z"/>
-                </svg>
-                <h2 class="h5 fw-bold mb-0">WhatsApp Status Update</h2>
-              </div>
-              <span class="badge bg-light text-dark border fw-medium">Formatted Message</span>
+              <h2 class="h5 fw-bold mb-0">WhatsApp Status Update</h2>
+              <span class="badge bg-light text-dark border">Ready to Send</span>
             </div>
-
-            <div class="payload-preview p-3 mb-3" id="whatsappPreview">
-              <!-- Rendered via JS -->
-            </div>
-
-            <div class="d-flex flex-wrap gap-2">
-              <button id="sendWhatsappBtn" class="btn btn-whatsapp btn-touch d-flex align-items-center justify-content-center gap-2 flex-grow-1">
-                <!-- Send Paper Plane SVG -->
-                <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.716 3.716.002.001.26.41a.5.5 0 0 0 .886-.083l6-15zm-1.833 1.89L6.637 10.07l-.215-.215L2.294 6.074 13.51 1.866z"/>
-                </svg>
-                Send via WhatsApp
-              </button>
-              <button id="copyPayloadBtn" class="btn btn-outline-secondary btn-touch rounded-3 px-4">Copy Message</button>
+            <div class="bg-light p-3 rounded border font-monospace small mb-3" id="whatsappPreview"></div>
+            <div class="d-flex gap-2">
+              <button id="sendWhatsappBtn" class="btn btn-whatsapp d-flex align-items-center gap-2">Send via WhatsApp</button>
+              <button id="copyPayloadBtn" class="btn btn-outline-secondary">Copy Message</button>
             </div>
           </div>
         </div>
@@ -214,29 +189,19 @@
 
       <!-- BILL SCHEDULE TAB -->
       <div class="tab-pane fade" id="schedule" role="tabpanel">
-        <div class="card mb-4">
+        <div class="card">
           <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <div>
-                <h2 class="h5 fw-bold mb-0">Static Direct Debits Schedule</h2>
-                <p class="text-secondary small mb-0">23 items from Fairmead bank statements (£2,249.45 total)</p>
-              </div>
-              <span class="badge bg-secondary-subtle text-secondary fw-semibold fs-7" id="scheduleSummaryBadge">Total: £2,249.45</span>
-            </div>
-
+            <h2 class="h5 fw-bold mb-3">Static Direct Debits & Bill Dates</h2>
             <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+              <table class="table table-sm align-middle">
+                <thead>
                   <tr>
-                    <th scope="col" style="width: 15%;">Day</th>
-                    <th scope="col" style="width: 45%;">Direct Debit / Item Name</th>
-                    <th scope="col" style="width: 20%;" class="text-end">Amount (£)</th>
-                    <th scope="col" style="width: 20%;" class="text-center">Status on Checkpoint</th>
+                    <th>Bill Item</th>
+                    <th>Direct Debit Day</th>
+                    <th>Amount (£)</th>
                   </tr>
                 </thead>
-                <tbody id="billScheduleBody">
-                  <!-- Dynamically populated from JS array -->
-                </tbody>
+                <tbody id="billScheduleBody"></tbody>
               </table>
             </div>
           </div>
@@ -246,63 +211,82 @@
     </div>
   </div>
 
-  <!-- Bootstrap 5 Bundle JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
   <script>
-    const STORAGE_KEY = 'fairmead_cashflow_engine_v1';
+    const APP_PASSCODE = 'Fairmead2026';
+    const AUTH_KEY = 'fairmead_auth_session';
+    const STORAGE_KEY = 'fairmead_dual_payday_data';
 
-    // Exact 23 Direct Debits from Bank Statements
-    const staticBillsList = [
-      { day: 1, name: "Mortgage (MTG 40018815702232)", amount: 946.41 },
-      { day: 1, name: "Council Tax (WNC Income)", amount: 218.00 },
-      { day: 1, name: "DVLA Vehicle Tax", amount: 17.06 },
-      { day: 1, name: "PlanMyService LLP", amount: 21.55 },
-      { day: 1, name: "D&G AO Care Plan", amount: 7.49 },
-      { day: 1, name: "Belle Swimming / Everyone Active", amount: 39.17 },
-      { day: 2, name: "NHSBSA Prescription PPC", amount: 11.45 },
-      { day: 5, name: "E.ON Next (Gas & Electric)", amount: 112.67 },
-      { day: 5, name: "Homeserve GB Insurance", amount: 16.62 },
-      { day: 5, name: "Animal Health Care (Vets Plan x2)", amount: 33.98 },
-      { day: 8, name: "Anglian Water", amount: 45.00 },
-      { day: 8, name: "TV Licence MBP", amount: 14.95 },
-      { day: 8, name: "Disney+", amount: 14.99 },
-      { day: 10, name: "Royal London Life Insurance", amount: 61.38 },
-      { day: 12, name: "Churchill Insurance", amount: 28.15 },
-      { day: 14, name: "NBS Personal Loan", amount: 285.70 },
-      { day: 15, name: "Samsung Finance", amount: 42.89 },
-      { day: 17, name: "SMARTY (x2 SIMs)", amount: 14.40 },
-      { day: 18, name: "Cats Food & Litter", amount: 146.17 },
-      { day: 22, name: "IFL Pet Insurance (x2)", amount: 29.98 },
-      { day: 24, name: "Diamond Insurance", amount: 44.86 },
-      { day: 24, name: "Spotify", amount: 17.99 },
-      { day: 28, name: "Virgin Media", amount: 71.10 }
+    const defaultBills = [
+      { name: "Mortgage", day: 1, amount: 946.41 },
+      { name: "Council Tax", day: 1, amount: 218.00 },
+      { name: "DVLA Vehicle Tax", day: 1, amount: 17.06 },
+      { name: "PlanMyService LLP", day: 1, amount: 21.55 },
+      { name: "D&G AO Care Plan", day: 1, amount: 7.49 },
+      { name: "Belle Swimming", day: 1, amount: 39.17 },
+      { name: "NHS Prescription PPC", day: 2, amount: 11.45 },
+      { name: "E.ON Gas & Electric", day: 5, amount: 112.67 },
+      { name: "Homeserve GB", day: 5, amount: 16.62 },
+      { name: "Vets Care Plan", day: 5, amount: 33.98 },
+      { name: "Anglian Water", day: 8, amount: 45.00 },
+      { name: "TV Licence", day: 8, amount: 14.95 },
+      { name: "Disney+", day: 8, amount: 14.99 },
+      { name: "Royal London Insurance", day: 10, amount: 61.38 },
+      { name: "Churchill Insurance", day: 12, amount: 28.15 },
+      { name: "NBS Personal Loan", day: 14, amount: 285.70 },
+      { name: "Samsung Finance", day: 15, amount: 42.89 },
+      { name: "SMARTY SIMs", day: 17, amount: 14.40 },
+      { name: "Cats Food & Litter", day: 18, amount: 146.17 },
+      { name: "IFL Pet Insurance", day: 22, amount: 29.98 },
+      { name: "Diamond Insurance", day: 24, amount: 44.86 },
+      { name: "Spotify", day: 24, amount: 17.99 },
+      { name: "Virgin Media", day: 28, amount: 71.10 }
     ];
-
-    function formatDateUK(dateObj) {
-      const d = String(dateObj.getDate()).padStart(2, '0');
-      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const y = dateObj.getFullYear();
-      return `${d}/${m}/${y}`;
-    }
 
     const todayISO = new Date().toISOString().split('T')[0];
 
     let state = {
       actualBalance: 2450.00,
       checkDate: todayISO,
-      partnerPhone: ''
+      bills: defaultBills,
+      history: []
     };
+
+    let chartInstance = null;
+
+    function checkAuth() {
+      if (localStorage.getItem(AUTH_KEY) === 'true') {
+        document.getElementById('lockScreen').classList.add('d-none');
+        document.getElementById('appContent').classList.remove('d-none');
+        loadState();
+      } else {
+        document.getElementById('lockScreen').classList.remove('d-none');
+        document.getElementById('appContent').classList.add('d-none');
+      }
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const entered = document.getElementById('passwordInput').value;
+      if (entered === APP_PASSCODE) {
+        localStorage.setItem(AUTH_KEY, 'true');
+        document.getElementById('loginError').classList.add('d-none');
+        checkAuth();
+      } else {
+        document.getElementById('loginError').classList.remove('d-none');
+      }
+    });
+
+    document.getElementById('lockAppBtn').addEventListener('click', () => {
+      localStorage.removeItem(AUTH_KEY);
+      document.getElementById('passwordInput').value = '';
+      checkAuth();
+    });
 
     function loadState() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          state = { ...state, ...parsed };
-        } catch (e) {
-          console.error("Failed to load local state", e);
-        }
+        try { state = { ...state, ...JSON.parse(saved) }; } catch(e){}
       }
       render();
     }
@@ -312,12 +296,10 @@
       render();
     }
 
-    // Calculates next primary payday (28th of current or next month)
     function getNextPaydayDate(fromDate) {
       const d = new Date(fromDate);
       let targetYear = d.getFullYear();
       let targetMonth = d.getMonth();
-
       if (d.getDate() >= 28) {
         targetMonth += 1;
         if (targetMonth > 11) {
@@ -329,7 +311,7 @@
     }
 
     function calculateCashFlow() {
-      const checkD = new Date(state.checkDate || todayISO);
+      const checkD = new Date(state.checkDate);
       const nextPayday = getNextPaydayDate(checkD);
       
       const timeDiff = nextPayday - checkD;
@@ -339,13 +321,9 @@
       const currentDayOfMonth = checkD.getDate();
 
       let pendingBillsTotal = 0;
-      let pendingCount = 0;
-
-      staticBillsList.forEach(bill => {
-        // If bill day >= checkpoint day of month, bill is still pending
+      state.bills.forEach(bill => {
         if (bill.day >= currentDayOfMonth) {
           pendingBillsTotal += bill.amount;
-          pendingCount += 1;
         }
       });
 
@@ -353,113 +331,130 @@
       const weeklySpendAllowance = netFlexiblePool / weeksRemaining;
 
       return {
-        checkDateFormatted: formatDateUK(checkD),
-        currentDayOfMonth,
+        checkDateFormatted: checkD.toLocaleDateString('en-GB'),
         daysToPayday,
         weeksRemaining,
         pendingBillsTotal,
-        pendingCount,
         netFlexiblePool,
         weeklySpendAllowance
       };
     }
 
-    function generateWhatsappText(metrics) {
+    function generateWhatsapp(metrics) {
       return `📊 *Fairmead House Check-In (${metrics.checkDateFormatted})*\n` +
              `--------------------------------\n` +
              `• Account Balance: £${state.actualBalance.toFixed(2)}\n` +
-             `• Pending Direct Debits: £${metrics.pendingBillsTotal.toFixed(2)} (${metrics.pendingCount} remaining)\n` +
+             `• Pending Bills Until 28th Payday: £${metrics.pendingBillsTotal.toFixed(2)}\n` +
              `--------------------------------\n` +
              `• Protected Flexible Pool: £${metrics.netFlexiblePool.toFixed(2)}\n` +
-             `👉 *Weekly Spend Allowance:* £${metrics.weeklySpendAllowance.toFixed(2)} / week for food, petrol & counselling over the next ${metrics.daysToPayday} day(s) (${metrics.weeksRemaining.toFixed(1)} weeks).`;
+             `👉 *Weekly Spend Allowance:* £${metrics.weeklySpendAllowance.toFixed(2)} / week for food, petrol & counselling over the next ${metrics.daysToPayday} day(s).`;
+    }
+
+    function updateBurndownChart() {
+      const ctx = document.getElementById('burndownChart').getContext('2d');
+      
+      // Expected Burndown trajectory (Weeks 1 to 4)
+      const labels = ['Day 1', 'Day 7 (W1)', 'Day 14 (W2)', 'Day 21 (W3)', 'Day 28 (Payday)'];
+      const targetTrajectory = [2879.45, 2350.00, 1820.00, 1290.00, 760.00];
+
+      // Plot actual entry relative to day of month
+      const checkD = new Date(state.checkDate);
+      const dayOfMonth = checkD.getDate();
+      const actualPlot = [null, null, null, null, null];
+
+      if (dayOfMonth <= 7) actualPlot[1] = state.actualBalance;
+      else if (dayOfMonth <= 14) actualPlot[2] = state.actualBalance;
+      else if (dayOfMonth <= 21) actualPlot[3] = state.actualBalance;
+      else actualPlot[4] = state.actualBalance;
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Ideal Burndown Target',
+              data: targetTrajectory,
+              borderColor: '#6c757d',
+              borderDash: [5, 5],
+              fill: false,
+              tension: 0.1
+            },
+            {
+              label: 'Actual Balance Checkpoint',
+              data: actualPlot,
+              borderColor: '#0d6efd',
+              backgroundColor: '#0d6efd',
+              pointRadius: 6,
+              pointHoverRadius: 8,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          },
+          scales: {
+            y: {
+              ticks: {
+                callback: function(value) { return '£' + value; }
+              }
+            }
+          }
+        }
+      });
     }
 
     function render() {
       const metrics = calculateCashFlow();
 
-      document.getElementById('displayPendingBills').textContent = `£${metrics.pendingBillsTotal.toFixed(2)}`;
-      document.getElementById('displayPendingCount').textContent = `${metrics.pendingCount} of 23 bills pending`;
-      document.getElementById('displayNetFlexible').textContent = `£${metrics.netFlexiblePool.toFixed(2)}`;
+      document.getElementById('displayPendingBills').textContent = `£${metrics.pendingBillsTotal.toFixed(0)}`;
+      document.getElementById('displayNetFlexible').textContent = `£${metrics.netFlexiblePool.toFixed(0)}`;
       document.getElementById('displayDaysToPayday').textContent = metrics.daysToPayday;
-      document.getElementById('displayWeeksSubtext').textContent = `${metrics.weeksRemaining.toFixed(1)} weeks remaining`;
-      document.getElementById('displayWeeklySpend').textContent = `£${metrics.weeklySpendAllowance.toFixed(2)}`;
+      document.getElementById('displayWeeklySpend').textContent = `£${metrics.weeklySpendAllowance.toFixed(0)}`;
 
-      document.getElementById('checkDate').value = state.checkDate || todayISO;
+      document.getElementById('checkDate').value = state.checkDate;
       document.getElementById('checkBalance').value = state.actualBalance || '';
 
-      document.getElementById('whatsappPreview').innerText = generateWhatsappText(metrics);
+      document.getElementById('whatsappPreview').innerText = generateWhatsapp(metrics);
 
-      // Render Schedule Table
       const tbody = document.getElementById('billScheduleBody');
       tbody.innerHTML = '';
-
-      staticBillsList.forEach(bill => {
-        const isPending = bill.day >= metrics.currentDayOfMonth;
+      state.bills.forEach(bill => {
         const tr = document.createElement('tr');
-        
-        tr.innerHTML = `
-          <td class="fw-semibold text-secondary">${bill.day}${getOrdinalSuffix(bill.day)}</td>
-          <td class="fw-medium">${bill.name}</td>
-          <td class="text-end font-monospace">£${bill.amount.toFixed(2)}</td>
-          <td class="text-center">
-            ${isPending 
-              ? '<span class="status-badge bg-warning-subtle text-warning-emphasis">Pending</span>' 
-              : '<span class="status-badge bg-success-subtle text-success">Cleared</span>'}
-          </td>
-        `;
+        tr.innerHTML = `<td>${bill.name}</td><td>${bill.day}th of month</td><td>£${bill.amount.toFixed(2)}</td>`;
         tbody.appendChild(tr);
       });
+
+      updateBurndownChart();
     }
 
-    function getOrdinalSuffix(i) {
-      const j = i % 10, k = i % 100;
-      if (j === 1 && k !== 11) return "st";
-      if (j === 2 && k !== 12) return "nd";
-      if (j === 3 && k !== 13) return "rd";
-      return "th";
-    }
-
-    // Event Listeners
     document.getElementById('checkpointForm').addEventListener('submit', (e) => {
       e.preventDefault();
-      const bal = parseFloat(document.getElementById('checkBalance').value);
-      const dVal = document.getElementById('checkDate').value;
-      if (!isNaN(bal) && dVal) {
-        state.actualBalance = bal;
-        state.checkDate = dVal;
-        saveState();
-      }
+      state.actualBalance = parseFloat(document.getElementById('checkBalance').value) || 0;
+      state.checkDate = document.getElementById('checkDate').value;
+      saveState();
     });
 
     document.getElementById('sendWhatsappBtn').addEventListener('click', () => {
       const metrics = calculateCashFlow();
-      const text = encodeURIComponent(generateWhatsappText(metrics));
-      const phone = state.partnerPhone ? state.partnerPhone.replace(/[^0-9]/g, '') : '';
-      const url = phone ? `https://wa.me/${phone}?text=${text}` : `https://wa.me/?text=${text}`;
-      window.open(url, '_blank');
+      const text = encodeURIComponent(generateWhatsapp(metrics));
+      window.open(`https://wa.me/?text=${text}`, '_blank');
     });
 
     document.getElementById('copyPayloadBtn').addEventListener('click', () => {
       const metrics = calculateCashFlow();
-      const text = generateWhatsappText(metrics);
-      
-      const tempTextArea = document.createElement('textarea');
-      tempTextArea.value = text;
-      document.body.appendChild(tempTextArea);
-      tempTextArea.select();
-      
-      try {
-        document.execCommand('copy');
-        alert('WhatsApp update copied to clipboard!');
-      } catch (err) {
-        alert('Could not copy automatically. Please copy manually.');
-      } finally {
-        document.body.removeChild(tempTextArea);
-      }
+      navigator.clipboard.writeText(generateWhatsapp(metrics)).then(() => alert('Message copied to clipboard!'));
     });
 
-    // Initialize engine on load
-    loadState();
+    checkAuth();
   </script>
 </body>
 </html>
