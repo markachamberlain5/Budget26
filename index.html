@@ -90,7 +90,7 @@
         <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">Dashboard & Burndown</button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="schedule-tab" data-bs-toggle="tab" data-bs-target="#schedule" type="button" role="tab">Bill Schedule</button>
+        <button class="nav-link" id="schedule-tab" data-bs-toggle="tab" data-bs-target="#schedule" type="button" role="tab">Bill Schedule (23 Direct Debits)</button>
       </li>
     </ul>
 
@@ -106,6 +106,16 @@
               <div class="card-body p-3">
                 <span class="text-secondary small">Pending Bills</span>
                 <div class="metric-value text-danger" id="displayPendingBills">£0</div>
+                <span class="text-muted extra-small" id="displayPendingCount">0 remaining</span>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="card h-100">
+              <div class="card-body p-3">
+                <span class="text-secondary small">Cleared So Far</span>
+                <div class="metric-value text-success" id="displayClearedBills">£0</div>
+                <span class="text-muted extra-small" id="displayClearedCount">0 paid</span>
               </div>
             </div>
           </div>
@@ -114,14 +124,7 @@
               <div class="card-body p-3">
                 <span class="text-secondary small">Protected Pool</span>
                 <div class="metric-value text-dark" id="displayNetFlexible">£0</div>
-              </div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="card h-100">
-              <div class="card-body p-3">
-                <span class="text-secondary small">Days to Payday</span>
-                <div class="metric-value text-primary" id="displayDaysToPayday">0</div>
+                <span class="text-muted extra-small">Balance minus pending</span>
               </div>
             </div>
           </div>
@@ -129,7 +132,8 @@
             <div class="card h-100">
               <div class="card-body p-3">
                 <span class="text-secondary small">Adj. Weekly Spend</span>
-                <div class="metric-value text-success" id="displayWeeklySpend">£0</div>
+                <div class="metric-value text-primary" id="displayWeeklySpend">£0</div>
+                <span class="text-muted extra-small" id="displayDaysToPaydayText">0 days left</span>
               </div>
             </div>
           </div>
@@ -191,7 +195,8 @@
       <div class="tab-pane fade" id="schedule" role="tabpanel">
         <div class="card">
           <div class="card-body p-4">
-            <h2 class="h5 fw-bold mb-3">Static Direct Debits & Bill Dates</h2>
+            <h2 class="h5 fw-bold mb-3">Static Direct Debits & Bill Status</h2>
+            <p class="text-secondary small">Status badges dynamically update based on your selected Checkpoint Date.</p>
             <div class="table-responsive">
               <table class="table table-sm align-middle">
                 <thead>
@@ -199,6 +204,7 @@
                     <th>Bill Item</th>
                     <th>Direct Debit Day</th>
                     <th>Amount (£)</th>
+                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody id="billScheduleBody"></tbody>
@@ -248,8 +254,7 @@
     let state = {
       actualBalance: 2450.00,
       checkDate: todayISO,
-      bills: defaultBills,
-      history: []
+      bills: defaultBills
     };
 
     let chartInstance = null;
@@ -321,9 +326,17 @@
       const currentDayOfMonth = checkD.getDate();
 
       let pendingBillsTotal = 0;
+      let pendingCount = 0;
+      let clearedBillsTotal = 0;
+      let clearedCount = 0;
+
       state.bills.forEach(bill => {
         if (bill.day >= currentDayOfMonth) {
           pendingBillsTotal += bill.amount;
+          pendingCount++;
+        } else {
+          clearedBillsTotal += bill.amount;
+          clearedCount++;
         }
       });
 
@@ -335,8 +348,12 @@
         daysToPayday,
         weeksRemaining,
         pendingBillsTotal,
+        pendingCount,
+        clearedBillsTotal,
+        clearedCount,
         netFlexiblePool,
-        weeklySpendAllowance
+        weeklySpendAllowance,
+        currentDayOfMonth
       };
     }
 
@@ -344,7 +361,8 @@
       return `📊 *Fairmead House Check-In (${metrics.checkDateFormatted})*\n` +
              `--------------------------------\n` +
              `• Account Balance: £${state.actualBalance.toFixed(2)}\n` +
-             `• Pending Bills Until 28th Payday: £${metrics.pendingBillsTotal.toFixed(2)}\n` +
+             `• Cleared Bills So Far: £${metrics.clearedBillsTotal.toFixed(2)} (${metrics.clearedCount} paid)\n` +
+             `• Pending Bills Until 28th: £${metrics.pendingBillsTotal.toFixed(2)} (${metrics.pendingCount} remaining)\n` +
              `--------------------------------\n` +
              `• Protected Flexible Pool: £${metrics.netFlexiblePool.toFixed(2)}\n` +
              `👉 *Weekly Spend Allowance:* £${metrics.weeklySpendAllowance.toFixed(2)} / week for food, petrol & counselling over the next ${metrics.daysToPayday} day(s).`;
@@ -353,11 +371,9 @@
     function updateBurndownChart() {
       const ctx = document.getElementById('burndownChart').getContext('2d');
       
-      // Expected Burndown trajectory (Weeks 1 to 4)
       const labels = ['Day 1', 'Day 7 (W1)', 'Day 14 (W2)', 'Day 21 (W3)', 'Day 28 (Payday)'];
       const targetTrajectory = [2879.45, 2350.00, 1820.00, 1290.00, 760.00];
 
-      // Plot actual entry relative to day of month
       const checkD = new Date(state.checkDate);
       const dayOfMonth = checkD.getDate();
       const actualPlot = [null, null, null, null, null];
@@ -416,20 +432,37 @@
       const metrics = calculateCashFlow();
 
       document.getElementById('displayPendingBills').textContent = `£${metrics.pendingBillsTotal.toFixed(0)}`;
+      document.getElementById('displayPendingCount').textContent = `${metrics.pendingCount} of 23 bills pending`;
+      
+      document.getElementById('displayClearedBills').textContent = `£${metrics.clearedBillsTotal.toFixed(0)}`;
+      document.getElementById('displayClearedCount').textContent = `${metrics.clearedCount} of 23 bills paid`;
+
       document.getElementById('displayNetFlexible').textContent = `£${metrics.netFlexiblePool.toFixed(0)}`;
-      document.getElementById('displayDaysToPayday').textContent = metrics.daysToPayday;
       document.getElementById('displayWeeklySpend').textContent = `£${metrics.weeklySpendAllowance.toFixed(0)}`;
+      document.getElementById('displayDaysToPaydayText').textContent = `${metrics.daysToPayday} days remaining`;
 
       document.getElementById('checkDate').value = state.checkDate;
       document.getElementById('checkBalance').value = state.actualBalance || '';
 
       document.getElementById('whatsappPreview').innerText = generateWhatsapp(metrics);
 
+      // Render Bill Schedule Table with visual indicators
       const tbody = document.getElementById('billScheduleBody');
       tbody.innerHTML = '';
       state.bills.forEach(bill => {
+        const isPaid = bill.day < metrics.currentDayOfMonth;
+        const statusBadge = isPaid 
+          ? `<span class="badge bg-success-subtle text-success border border-success-subtle">Cleared (Paid)</span>`
+          : `<span class="badge bg-danger-subtle text-danger border border-danger-subtle">Pending (£${bill.amount.toFixed(2)})</span>`;
+
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${bill.name}</td><td>${bill.day}th of month</td><td>£${bill.amount.toFixed(2)}</td>`;
+        tr.className = isPaid ? 'table-light text-muted' : '';
+        tr.innerHTML = `
+          <td class="${isPaid ? 'text-decoration-line-through' : 'fw-medium'}">${bill.name}</td>
+          <td>${bill.day}th of month</td>
+          <td>£${bill.amount.toFixed(2)}</td>
+          <td>${statusBadge}</td>
+        `;
         tbody.appendChild(tr);
       });
 
